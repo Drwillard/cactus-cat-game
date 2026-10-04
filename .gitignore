@@ -1,0 +1,9 @@
+tools/gbdk/
+build/*.asm
+build/*.ihx
+build/*.lk
+build/*.lst
+build/*.map
+build/*.noi
+build/*.o
+build/*.sym
