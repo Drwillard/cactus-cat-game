@@ -1,6 +1,6 @@
 # Cactus Cat
 
-A desert runner for ModRetro Chromatic, Game Boy Color, and the original monochrome Game Boy. Choose an orange, black, white, or blue cat—or a brown dog—and see how far you can travel through a desert with slowly scrolling mountains and original synthpop music.
+A desert runner for ModRetro Chromatic, Game Boy Color, and the original monochrome Game Boy. Choose an orange, black, white, or blue cat—a brown dog, or a ghost—and see how far you can travel through a desert with slowly scrolling mountains and original synthpop music.
 
 ## Gameplay
 
@@ -9,6 +9,12 @@ Jump over three varieties of cacti, rivers, and holes. Duck under low-flying bir
 Each obstacle cleared earns **1 point**. Eat blue fish for **5 bonus points**: they appear at randomized heights and distances, so some require a jump. Missing a fish has no penalty.
 
 The game speeds up after every ten obstacles cleared, up to a maximum speed. Fish bonuses do not increase the speed. Your best score lasts until power-off, and your chosen pet stays selected when you retry.
+
+## Ghost mode
+
+Choose **GHOST** to enter a moonlit Halloween world. Jump over jack-o’-lanterns, dodge flying witches, and collect wrapped candy for **5 bonus points**. Rivers and holes remain hazards, and the same tap/hold jump controls apply.
+
+At **100 total points**, the jack-o’-lanterns transform into zombies and an **AHHH! ZOMBIES!** message announces the change. Candy bonuses count toward this threshold. Retrying resets the score and brings back the pumpkins. Cats and the dog keep their daytime desert world.
 
 ## Controls
 
@@ -43,6 +49,7 @@ With `pyboy` and `pillow` installed, run:
 ```sh
 python tools/test_rom.py
 python tools/test_jump.py
+python tools/test_halloween.py
 ```
 
 The checks exercise character selection, hazards, fish scoring, scrolling scenery, pause, restart, music, and variable-height jumps through actual ROM button input. Screenshots are saved in `build/`.

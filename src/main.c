@@ -17,7 +17,7 @@ static void sample_input(void) {
     input_held=buttons;
 }
 uint8_t obstacle_kind, obstacle_y, ducking;
-uint8_t character, picking=1;
+uint8_t character, picking=1, zombie_mode, scare_timer;
 int16_t fish_x;
 uint8_t fish_active, fish_y, jump_buffer, jump_cut;
 uint16_t cleared, fish_eaten;
@@ -35,6 +35,13 @@ static const palette_color_t bg_colors[] = { RGB(27,29,25), RGB(24,21,13), RGB(1
 static const palette_color_t mountain_colors[] = {RGB(27,29,25),RGB(23,26,23),RGB(20,24,21),RGB(6,9,10)};
 static const palette_color_t river_colors[] = {RGB(27,29,25),RGB(19,28,31),RGB(19,14,8),RGB(6,17,25)};
 static const palette_color_t hole_colors[] = {RGB(27,29,25),RGB(12,10,8),RGB(19,14,8),RGB(3,4,6)};
+static const palette_color_t night_colors[]={RGB(2,3,8),RGB(8,6,13),RGB(12,9,17),RGB(28,28,24)};
+static const palette_color_t night_mountains[]={RGB(2,3,8),RGB(5,6,12),RGB(8,8,15),RGB(28,28,24)};
+static const palette_color_t moon_colors[]={RGB(2,3,8),RGB(31,29,18),RGB(16,17,24),RGB(28,28,24)};
+static const palette_color_t pumpkin_colors[]={RGB(2,3,8),RGB(31,15,2),RGB(31,27,5),RGB(7,3,6)};
+static const palette_color_t witch_colors[]={RGB(2,3,8),RGB(14,24,7),RGB(22,13,5),RGB(22,9,28)};
+static const palette_color_t candy_colors[]={RGB(2,3,8),RGB(31,10,21),RGB(31,28,8),RGB(12,4,17)};
+static const palette_color_t zombie_colors[]={RGB(2,3,8),RGB(15,24,8),RGB(13,7,19),RGB(3,6,3)};
 static const palette_color_t fish_colors[] = { RGB(27,29,25), RGB(10,26,31), RGB(31,25,8), RGB(3,9,16) };
 static const palette_color_t cat_colors[] = { RGB(27,29,25), RGB(30,19,7), RGB(31,11,15), RGB(6,6,9) };
 static const palette_color_t cactus_colors[] = { RGB(27,29,25), RGB(13,24,10), RGB(6,17,8), RGB(3,9,6) };
@@ -45,9 +52,10 @@ static const palette_color_t pet_colors[][4] = {
     { RGB(27,29,25), RGB(9,11,16), RGB(31,11,15), RGB(2,3,5) },
     { RGB(27,29,25), RGB(31,31,30), RGB(31,14,19), RGB(8,9,12) },
     { RGB(27,29,25), RGB(13,21,31), RGB(31,11,15), RGB(4,7,16) },
-    { RGB(27,29,25), RGB(22,14,7), RGB(31,12,16), RGB(5,4,3) }
+    { RGB(27,29,25), RGB(22,14,7), RGB(31,12,16), RGB(5,4,3) },
+    { RGB(2,3,8), RGB(29,30,31), RGB(6,7,15), RGB(17,19,26) }
 };
-static const char *pet_names[] = {"ORANGE CAT", "BLACK CAT", "WHITE CAT", "BLUE CAT", "BROWN DOG"};
+static const char *pet_names[] = {"ORANGE CAT", "BLACK CAT", "WHITE CAT", "BLUE CAT", "BROWN DOG", "GHOST"};
 static void landscape(uint8_t show) {
     uint8_t attrs[32];
     for (uint8_t i=0;i<32;++i) attrs[i]=show ? 1 : 0;
@@ -58,18 +66,39 @@ static void landscape(uint8_t show) {
             set_bkg_tiles(0,y,32,1,blank); }
     }
 }
+static void theme(void) {
+    zombie_mode=0; scare_timer=0;
+    if (_cpu==CGB_TYPE) {
+        set_bkg_palette(0,1,character==5 ? night_colors : bg_colors);
+        set_bkg_palette(1,1,character==5 ? night_mountains : mountain_colors);
+        set_bkg_palette(2,1,moon_colors);
+        set_sprite_palette(0,1,pet_colors[character]);
+        set_sprite_palette(1,1,character==5 ? pumpkin_colors : cactus_colors);
+        set_sprite_palette(2,1,character==5 ? witch_colors : cat_colors);
+        set_sprite_palette(3,1,character==5 ? candy_colors : fish_colors);
+    }
+    for (uint8_t yy=2;yy<7;++yy) for (uint8_t xx=0;xx<20;++xx) {
+        uint8_t tile=128, attr=0;
+        if (character==5) {
+            if ((yy==2 && (xx==2 || xx==9)) || (yy==6 && xx==6)) { tile=201; attr=2; }
+            if (yy>=4 && yy<=5 && xx>=17 && xx<19) { tile=197+(yy-4)*2+xx-17; attr=2; }
+        } else if (yy==4 && (xx==3 || xx==12 || xx==13)) tile=130;
+        if (_cpu==CGB_TYPE) { VBK_REG=1; set_bkg_tiles(xx,yy,1,1,&attr); VBK_REG=0; }
+        set_bkg_tiles(xx,yy,1,1,&tile);
+    }
+}
 static void picker(void) {
-    landscape(0); picking=1; running=0; paused=0; ducking=0; cat_y=FLOOR*16;
+    theme(); landscape(0); picking=1; running=0; paused=0; ducking=0; cat_y=FLOOR*16;
     cactus_x=184; fish_active=0;
     if (_cpu == CGB_TYPE) set_sprite_palette(0,1,pet_colors[character]);
-    gotoxy(0,3); printf("   CACTUS CAT V8     ");
+    gotoxy(0,3); printf("   CACTUS CAT V9     ");
     message("   CHOOSE YOUR PET");
     gotoxy(0,9); printf("  < %s >     ",pet_names[character]);
     gotoxy(0,10); printf(" LEFT/RIGHT: CHANGE ");
     gotoxy(0,11); printf(" A / START: PLAY    ");
     gotoxy(0,12); printf(" SELECT: MUSIC      ");
     gotoxy(0,1); printf(" A:JUMP B/DOWN:DUCK ");
-    gotoxy(0,5); printf("    EAT FISH +5     ");
+    gotoxy(0,5); printf(character==5 ? "  EAT CANDY +5     " : "    EAT FISH +5     ");
     gotoxy(0,6); printf(" TAP:HOP HOLD:JUMP  ");
 }
 static uint8_t random_gap(void) {
@@ -91,7 +120,7 @@ static void message(const char *line) {
 }
 static void hud(void) {
     gotoxy(0,0);
-    printf("%s %u%u%u%u BEST %u%u%u%u", character==4 ? "DOG" : "CAT",
+    printf("%s %u%u%u%u BEST %u%u%u%u", character==4 ? "DOG" : (character==5 ? "BOO" : "CAT"),
         score/1000, (score/100)%10, (score/10)%10, score%10,
         best/1000, (best/100)%10, (best/10)%10, best%10);
 }
@@ -117,12 +146,18 @@ static void draw(void) {
     uint8_t y = (uint8_t)(cat_y / 16);
     if (ducking) base=8;
     if (character==4) base+=42;
+    if (character==5) base+=72;
+    if (character==5 && score>=100 && !zombie_mode) {
+        zombie_mode=1; scare_timer=90;
+        if (_cpu==CGB_TYPE) set_sprite_palette(1,1,zombie_colors);
+        message("  AHHH! ZOMBIES!");
+    }
     for (uint8_t i = 0; i != 4; ++i) {
         set_sprite_tile(i,base+i);
         move_sprite(i,CAT_X+8+(i & 1)*8,y+16+(i >> 1)*8);
     }
     for (uint8_t i=0; i<2; ++i) {
-        set_sprite_tile(i+10,54+i);
+        set_sprite_tile(i+10,(character==5 ? 108 : 54)+i);
         set_sprite_prop(i+10,_cpu == CGB_TYPE ? 3 : 0);
         if (fish_active && fish_x > -16 && fish_x < 160)
             move_sprite(i+10,(uint8_t)(fish_x+8+i*8),(uint8_t)(fish_y+16));
@@ -139,6 +174,7 @@ static void draw(void) {
         if (obstacle_kind>=5) { hide_sprite(i+4); continue; }
         uint8_t tile_base = obstacle_tiles[obstacle_kind];
         if (obstacle_kind >= 3 && (frame & 8)) tile_base=36;
+        if (character==5) tile_base=obstacle_kind>=3 ? 102 : (zombie_mode ? 110 : 84)+obstacle_kind*6;
         set_sprite_tile(i+4,tile_base+i);
         set_sprite_prop(i+4,_cpu == CGB_TYPE ? (obstacle_kind >= 3 ? 2 : 1) : 0);
         if (cactus_x > -16 && cactus_x < 160)
@@ -162,7 +198,7 @@ static void restart(void) {
     score = 0; speed = 2; cat_y = FLOOR * 16; velocity = 0;
     obstacle_kind=0; obstacle_y=104; ducking=0;
     cactus_x = 184; spawn_fish(); passed = 0; running = 1; paused = 0;
-    mountain_scroll=0; scenery_clock=0; landscape(1);
+    theme(); mountain_scroll=0; scenery_clock=0; landscape(1);
     picking=0; message(""); hud();
 }
 void main(void) {
@@ -189,7 +225,8 @@ void main(void) {
         }
     }
     set_bkg_data(131,sizeof(mountain_art)/16,mountain_art);
-    set_sprite_data(0,72,sprite_art);
+    set_bkg_data(197,5,night_art);
+    set_sprite_data(0,128,sprite_art);
     for (uint8_t i=0; i<4; ++i) {
         set_sprite_tile(i+4,8+i);
         set_sprite_prop(i+4,_cpu == CGB_TYPE ? 1 : 0);
@@ -215,7 +252,7 @@ void main(void) {
         if (!running) {
             if (!picking && (pressed & J_B)) picker();
             if (picking && (pressed & (J_LEFT | J_RIGHT))) {
-                character=(character+(pressed & J_RIGHT ? 1 : 4)) % 5;
+                character=(character+(pressed & J_RIGHT ? 1 : 5)) % 6;
                 picker(); hud();
             }
             if (pressed & (J_START | J_A)) {
@@ -231,6 +268,7 @@ void main(void) {
         } else {
             if (pressed & J_START) { paused=!paused; message(paused ? "       PAUSED" : ""); }
             if (!paused) {
+                if (scare_timer && !--scare_timer) message("");
                 ducking = (buttons & (J_DOWN | J_B)) && cat_y == FLOOR*16;
                 if (pressed & (J_A | J_UP)) jump_buffer=6;
                 if (jump_buffer && !ducking && cat_y == FLOOR*16) {

@@ -1,4 +1,4 @@
-"""Measure actual ROM jump arcs through A/Up input for both pets."""
+"""Measure actual ROM jump arcs through A/Up input for cat, dog and ghost."""
 from pathlib import Path
 from pyboy import PyBoy
 
@@ -36,7 +36,7 @@ def arc(button,hold,repress=False):
 try:
     p.tick(180); p.button_press('start'); p.tick(3)
     p.button_release('start'); p.tick(12)
-    for pet in (0,4):
+    for pet in (0,4,5):
         put('character',pet)
         for speed in (2,4):
             put('speed',speed)
@@ -46,6 +46,6 @@ try:
                 assert heights[0]<20 and heights[-1]>55, heights
                 assert arc(button,1,repress=True)==heights[0], 'Midair repress restores lift'
                 print(f'pet={pet} speed={speed} {button}: tap/6/12/hold heights {heights}')
-    print('PASS: progressive jump heights, A and Up, both pets, both speeds, landing and no double jump')
+    print('PASS: progressive jump heights, A and Up, cat, dog and ghost, both speeds, landing and no double jump')
 finally:
     p.stop(save=False)

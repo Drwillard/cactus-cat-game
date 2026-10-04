@@ -40,15 +40,17 @@ try:
     p.screen.image.save('build/title.png')
     assert value('picking') == 1
     appearances=[]
-    for choice in range(5):
+    for choice in range(6):
         assert value('character') == choice
         p.tick(10)
         appearances.append(p.screen.ndarray[112:128,32:48,:3].copy())
         p.screen.image.save(f'build/pet-{choice}.png')
-        if choice < 4:
+        if choice < 5:
             press('right'); p.tick(10)
     assert all(not np.array_equal(appearances[i],appearances[j])
-               for i in range(5) for j in range(i+1,5))
+               for i in range(6) for j in range(i+1,6))
+    press('left'); p.tick(10)
+    assert value('character') == 4
     press('start'); p.tick(10)
     assert value('running') == 1 and value('picking') == 0
     assert p.memory[0xfe02] >= 42, 'Dog art not used in gameplay'
@@ -83,9 +85,14 @@ try:
     press('b'); p.tick(10)
     assert value('picking') == 1 and value('character') == 4
     press('right'); p.tick(10)
+    assert value('character') == 5
+    press('right'); p.tick(10)
     assert value('character') == 0
     press('left'); p.tick(10)
+    assert value('character') == 5
+    press('left'); p.tick(10)
     assert value('character') == 4
+    press('right'); p.tick(10)
     press('right'); p.tick(10)
     press('a'); p.tick(10)
     assert value('running') == 1 and value('score', size=2) == 0
@@ -169,6 +176,6 @@ try:
         until(lambda: value('running')==0)
         p.tick(12)
         p.screen.image.save(f'build/terrain-fail-{terrain}.png')
-    print('PASS: scrolling mountains, pause, hole and river jumps and falls; randomized fish heights and gaps, jump pickup; fish eating +5, fish pause, combined scoring; 5 distinct pet previews, dog gameplay, pet switching, shorter gaps; music output, sequencing and mute; 60 hazards, all 3 cactus varieties, both bird heights, ducking, bird collision, scoring, pause and restart')
+    print('PASS: scrolling mountains, pause, hole and river jumps and falls; randomized fish heights and gaps, jump pickup; fish eating +5, fish pause, combined scoring; 6 distinct pet previews, dog gameplay, pet switching, shorter gaps; music output, sequencing and mute; 60 hazards, all 3 cactus varieties, both bird heights, ducking, bird collision, scoring, pause and restart')
 finally:
     p.stop(save=False)
