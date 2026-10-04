@@ -46,7 +46,3 @@ python tools/test_jump.py
 ```
 
 The checks exercise character selection, hazards, fish scoring, scrolling scenery, pause, restart, music, and variable-height jumps through actual ROM button input. Screenshots are saved in `build/`.
-
-## Desert Garden
-
-[Desert Garden](desert-garden/README.md) is a separate game in its own subfolder: a seasonal planting strategy game about raising saguaros with nurse trees and balancing shade against sunlight.
